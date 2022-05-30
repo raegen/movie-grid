@@ -36,9 +36,6 @@ const Theme: FC<PropsWithChildren<{}>> = ({ children }) => {
 };
 
 export const App = () => {
-  const [sort, setSort] = useState("ratings.imdb" as Sort);
-  const [search, setSearch] = useState("");
-
   return (
     <Theme>
       <QueryProvider>
@@ -48,18 +45,13 @@ export const App = () => {
             <Typography variant="h6" color="inherit" noWrap>
               Movie Grid
             </Typography>
-            <div
-              style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}
-            >
-              <ComboBox onChange={(keyword) => setSearch(keyword || '')} />
-            </div>
           </Toolbar>
         </AppBar>
         <main style={{ display: "flex", flexDirection: "column", flex: 1 }}>
           <Container
             style={{ display: "flex", flexDirection: "column", flex: 1 }}
           >
-            <Movies sort={sort} search={search} />
+            <Movies />
           </Container>
         </main>
       </QueryProvider>

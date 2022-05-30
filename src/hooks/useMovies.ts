@@ -1,3 +1,4 @@
+import { title } from "process";
 import { useCallback } from "react";
 import { useQuery, UseQueryOptions } from "react-query";
 
@@ -73,20 +74,36 @@ export const useMovies = <
           Array.from(new Map(items.map((item) => [item.id, item])).values())
             .map(
               (item) =>
-                ({
-                  ...item,
-                  ratings$: item.ratings.reduce(
-                    (acc, curr) => ({ ...acc, [curr.id]: curr.rating }),
-                    {} as { [id: string]: number }
-                  ),
-                } as Movie)
+                {
+                  const rgx = new RegExp(`\\b${search}\\b`, "i");
+                  let searchRelevance = 1;
+                  if (search) {
+                    const titleMatch = item.title.match(rgx);
+                    const overviewMatch = item.overview.match(rgx);
+                    if (titleMatch) {
+                      searchRelevance = 1 - 0.5 * ((titleMatch.index as number) / item.title.length);
+                    } else if (overviewMatch) {
+                        searchRelevance = 0.5 - 0.5 * ((overviewMatch.index as number) / item.overview.length);
+                    } else {
+                      searchRelevance = 0;
+                    }
+                  }
+                  return {
+                    ...item,
+                    searchRelevance$: searchRelevance,
+                    ratings$: item.ratings.reduce(
+                      (acc, curr) => ({ ...acc, [curr.id]: curr.rating }),
+                      {} as { [id: string]: number }
+                    ),
+                  } as Movie
+                }
             )
             .sort((a, b) => SORT[DEFAULT_SORT](b) - SORT[DEFAULT_SORT](a))
         )
         .then((data) => {
           let items = data.slice();
           if (search) {
-            const rgx = new RegExp(search, "i");
+            const rgx = new RegExp(`\\b${search}\\b`, "i");
             items = items.filter(
               ({ title, overview }) => title.match(rgx) || overview.match(rgx)
             );
@@ -103,7 +120,6 @@ export const useMovies = <
     {
       ...options,
       select,
-      staleTime: 0,
       keepPreviousData: true,
     }
   );

@@ -5,8 +5,8 @@ import InfiniteLoader from "react-window-infinite-loader";
 
 const noop = () => {};
 
-const ITEM_WIDTH = 200;
-const ITEM_HEIGHT = 300;
+// const ITEM_WIDTH = 200;
+// const ITEM_HEIGHT = 300;
 
 export const List = <T,>({
   hasNextPage,
@@ -33,6 +33,9 @@ export const List = <T,>({
       {({ width, height }) => {
         const cols = Math.floor(width / 200);
         const rows = Math.ceil(itemCount / cols);
+        const itemWidth = width/cols;
+        const itemHeight = itemWidth * 1.5;
+        console.log(height);
 
         return (
           <div
@@ -46,13 +49,13 @@ export const List = <T,>({
               {({ onItemsRendered, ref }) => (
                 <FixedSizeGrid
                   columnCount={cols}
-                  columnWidth={ITEM_WIDTH}
+                  columnWidth={itemWidth}
                   overscanColumnCount={5}
                   height={height}
                   rowCount={rows}
-                  rowHeight={ITEM_HEIGHT}
+                  rowHeight={itemHeight}
                   overscanRowCount={5}
-                  width={cols * 200}
+                  width={width}
                   onItemsRendered={({
                     overscanRowStartIndex,
                     overscanColumnStartIndex,
