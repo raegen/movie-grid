@@ -1,16 +1,12 @@
 import { CircularProgress } from "@mui/material";
 import { CSSProperties, useEffect } from "react";
 import { FC, useCallback, useState } from "react";
-import { Movie, useMovies } from "../hooks/useMovies";
+import { useMovies } from "../hooks/useMovies";
 import { columnFill, flexFill } from "../style";
 import { List } from "./list";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { ComboBox } from "./search";
-
-const ITEMS_PLACEHOLDER = {
-  items: [] as Movie[],
-  total: 0
-};
+import { Item } from "./list/item";
 
 const style = {
   searchContainer: { display: "flex", padding: "10px 0" } as CSSProperties,
@@ -20,7 +16,7 @@ export const Movies: FC = () => {
   const [limit, setLimit] = useState<number>(20);
   const [search, setSearch] = useState("");
 
-  const { data, isLoading } = useMovies({
+  const { data: { items, total }, isLoading } = useMovies({
     sort: "ratings.imdb",
     search,
     limit,
@@ -37,6 +33,22 @@ export const Movies: FC = () => {
     []
   );
 
+  const renderGrid = useCallback(
+    ({ width, height }: { width: number; height: number }) =>
+      isLoading ? (
+        <CircularProgress />
+      ) : (
+        <List
+          loadMoreItems={loadMoreItems}
+          items={items}
+          width={width}
+          height={height}
+          count={total}
+        >{Item}</List>
+      ),
+    [items, total, isLoading, loadMoreItems]
+  );
+
   return (
     <div style={columnFill}>
       <div style={style.searchContainer}>
@@ -47,20 +59,7 @@ export const Movies: FC = () => {
         />
       </div>
       <div style={flexFill}>
-        <AutoSizer>
-          {({ width, height }: { width: number; height: number }) =>
-            isLoading ? (
-              <CircularProgress />
-            ) : (
-              <List
-                loadMoreItems={loadMoreItems}
-                items={data || ITEMS_PLACEHOLDER}
-                width={width}
-                height={height}
-              />
-            )
-          }
-        </AutoSizer>
+        <AutoSizer>{renderGrid}</AutoSizer>
       </div>
     </div>
   );

@@ -1,71 +1,99 @@
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import {
+  CSSProperties,
+  FC,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FixedSizeGrid, GridOnItemsRenderedProps } from "react-window";
 import InfiniteLoader from "react-window-infinite-loader";
-import { Movie } from "../../hooks/useMovies";
-import { Item } from "./item";
 
-// const ITEM_WIDTH = 200;
-// const ITEM_HEIGHT = 300;
-
-const ARROWS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
-
-export const List = ({
-  items: {items, total},
+export const List = <T,>({
+  items,
+  count,
+  children: Item,
   loadMoreItems,
   width,
   height,
 }: {
-  items: {
-    items: Movie[];
-    total: number;
-  };
+  items: T[];
+  count: number;
   height: number;
   width: number;
+  children: FC<{
+    data: T;
+    isLoading: boolean;
+    isFavorite: boolean;
+    isSelected: boolean;
+    onFavorite: () => void;
+    onSelect: () => void;
+    style: CSSProperties;
+  }>;
   loadMoreItems: (startIndex: number, stopIndex: number) => void;
 }) => {
   const [selected, setSelected] = useState<number>(0);
-  const grid = useRef<{ rows: number; columns: number }>({
-    rows: 0,
-    columns: 0,
-  });
+  const [favorites, setFavorites] = useState<Map<T, true>>(new Map());
+  const gridRef = useRef<FixedSizeGrid>(null);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (ARROWS.includes(e.key)) {
-        let index = selected;
-        if (e.key === "ArrowUp") {
-          index = selected - grid.current.columns;
-        } else if (e.key === "ArrowDown") {
-          index = selected + grid.current.columns;
-        } else if (e.key === "ArrowLeft") {
-          index = selected - 1;
-        } else if (e.key === "ArrowRight") {
-          index = selected + 1;
-        }
-
-        if (items[index]) {
-          setSelected(index);
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handler);
-
-    return () => document.removeEventListener("keydown", handler);
-  }, [selected, items]);
-
-  const itemCount = items.length;
   const isItemLoaded = (index: number) => !!items[index];
+  const isItemLoading = (index: number) => !items[index] && index < count;
+  const isItemFavorite = (item: T) => favorites.has(item);
 
   const cols = Math.floor(width / 200);
-  const rows = Math.ceil(itemCount / cols);
-  const itemWidth = width / cols;
+  const rows = Math.ceil(items.length / cols);
+  const itemWidth = (width - 30) / cols;
   const itemHeight = itemWidth * 1.5;
 
-  grid.current = {
-    rows: rows,
-    columns: cols,
-  };
+  const scrollToSelected = useCallback(
+    (index: number) => {
+      const rowIndex = Math.floor(index / cols);
+      const columnIndex = index - rowIndex * cols;
+      if (gridRef.current) {
+        gridRef.current.scrollToItem({
+          align: "auto",
+          columnIndex,
+          rowIndex,
+        });
+      }
+    },
+    [cols]
+  );
+
+  const selectIfExists = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < count) {
+        setSelected(index);
+        scrollToSelected(index);
+      }
+    },
+    [count, scrollToSelected]
+  );
+
+  const toggleFavorite = useCallback(
+    (index: number) => {
+      const item = items[index];
+      if (favorites.get(item)) {
+        favorites.delete(item);
+      } else {
+        favorites.set(item, true);
+      }
+      setFavorites(new Map(favorites));
+    },
+    [favorites, items]
+  );
+
+  const KEYS = useMemo(
+    () => ({
+      ArrowUp: () => selectIfExists(selected - cols),
+      ArrowDown: () => selectIfExists(selected + cols),
+      ArrowLeft: () => selectIfExists(selected - 1),
+      ArrowRight: () => selectIfExists(selected + 1),
+      Enter: () => toggleFavorite(selected),
+    }),
+    [cols, selectIfExists, selected, toggleFavorite]
+  );
 
   const getIndex = ({
     rowIndex,
@@ -75,11 +103,24 @@ export const List = ({
     columnIndex: number;
   }) => rowIndex * cols + columnIndex;
 
+  useEffect(() => {
+    const isKeyHandled = (key: string): key is keyof typeof KEYS => key in KEYS;
+    const handler = (e: KeyboardEvent) => {
+      if (isKeyHandled(e.key)) {
+        KEYS[e.key]();
+      }
+    };
+
+    document.addEventListener("keydown", handler);
+
+    return () => document.removeEventListener("keydown", handler);
+  }, [selected, items, KEYS, count, scrollToSelected]);
+
   return (
     <div style={{ display: "flex", width, height, justifyContent: "center" }}>
       <InfiniteLoader
         isItemLoaded={isItemLoaded}
-        itemCount={total}
+        itemCount={count}
         loadMoreItems={loadMoreItems}
       >
         {({ onItemsRendered, ref }) => (
@@ -89,11 +130,9 @@ export const List = ({
             height={height}
             rowCount={rows}
             rowHeight={itemHeight}
-            // itemKey={(params: {
-            //   columnIndex: number;
-            //   rowIndex: number;
-            //   data: T;
-            // }) => items[getIndex(params)].id}
+            itemKey={({ columnIndex, rowIndex, data }) =>
+              data?.id || getIndex({ columnIndex, rowIndex })
+            }
             width={width}
             onItemsRendered={({
               overscanRowStartIndex,
@@ -120,7 +159,8 @@ export const List = ({
                 visibleStopIndex: visibleStopIndex,
               });
             }}
-            ref={ref}
+            ref={gridRef}
+            className="grid"
           >
             {(params: {
               columnIndex: number;
@@ -130,22 +170,15 @@ export const List = ({
               const index = getIndex(params);
               const item = items[index];
 
-              const isSelected = index === selected;
-
               return (
                 <Item
-                  {...item}
-                  isLoading={!isItemLoaded(index)}
-                  style={
-                    isSelected
-                      ? {
-                          ...params.style,
-                          boxShadow: "0px 0px 20px 10px black",
-                          zIndex: 99,
-                          border: "1px solid #00c8b4",
-                        }
-                      : params.style
-                  }
+                  data={item}
+                  isLoading={isItemLoading(index)}
+                  isFavorite={isItemFavorite(item)}
+                  isSelected={index === selected}
+                  onFavorite={() => toggleFavorite(index)}
+                  onSelect={() => selectIfExists(index)}
+                  style={params.style}
                 />
               );
             }}

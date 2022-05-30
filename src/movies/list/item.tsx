@@ -1,32 +1,56 @@
 import StarBorderIcon from "@mui/icons-material/StarBorder";
+import StarIcon from "@mui/icons-material/Star";
 import { IconButton, ImageListItem, ImageListItemBar } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { CSSProperties, FC, memo } from "react";
-import { getPosterURL, Movie } from "../../hooks/useMovies";
+import { getPosterURL } from "../../hooks/useMovies";
+import { boxSelected } from "../../style";
+import { Movie } from "../../types";
 
-export const Item: FC<Movie & { style: CSSProperties }> =
-  memo(({ id, poster_path, title, release_date, isLoading, style }) =>
-    isLoading ? (
+export const Item: FC<{
+  data: Movie;
+  isLoading: boolean;
+  isSelected: boolean;
+  isFavorite: boolean;
+  onFavorite: () => void;
+  onSelect: () => void;
+  style: CSSProperties;
+}> = memo(
+  ({
+    data,
+    isLoading,
+    isSelected,
+    isFavorite,
+    onFavorite,
+    onSelect,
+    style,
+  }) => {
+    if (isLoading) {
+      return (
+        <ImageListItem
+          style={{
+            ...style,
+            ...(isSelected && boxSelected),
+            padding: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          cols={1}
+          rows={1}
+        >
+          <CircularProgress />
+        </ImageListItem>
+      );
+    }
+
+    const { poster_path, title, release_date } = data;
+    return (
       <ImageListItem
-        style={{
-          ...style,
-          padding: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        key={id}
+        style={{ ...style, opacity: 0.9, ...(isSelected && boxSelected), padding: 1 }}
         cols={1}
         rows={1}
-      >
-        <CircularProgress />
-      </ImageListItem>
-    ) : (
-      <ImageListItem
-        style={{ ...style, padding: 1 }}
-        key={id}
-        cols={1}
-        rows={1}
+        onClick={onSelect}
       >
         <img src={getPosterURL(poster_path, 300)} alt={title} loading="lazy" />
         <ImageListItemBar
@@ -40,8 +64,9 @@ export const Item: FC<Movie & { style: CSSProperties }> =
             <IconButton
               sx={{ justifySelf: "flex-start", color: "white" }}
               aria-label={`star ${title}`}
+              onClick={onFavorite}
             >
-              <StarBorderIcon />
+              {isFavorite ? <StarIcon /> : <StarBorderIcon />}
             </IconButton>
           }
           actionPosition="right"
@@ -60,5 +85,6 @@ export const Item: FC<Movie & { style: CSSProperties }> =
           position="bottom"
         />
       </ImageListItem>
-    )
-  );
+    );
+  }
+);

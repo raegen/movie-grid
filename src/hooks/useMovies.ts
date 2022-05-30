@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useQuery, UseQueryOptions } from "react-query";
+import { Movie, SafeUseQueryResult } from "../types";
 
 export const SORT = {
   "ratings.imdb": (item: Movie) => item.ratings$.imdb,
@@ -7,46 +8,27 @@ export const SORT = {
   "ratings.popularity": (item: Movie) => item.ratings$.popularity,
   "-ratings.popularity": (item: Movie) => -item.ratings$.popularity,
 };
-
 export type Sort = keyof typeof SORT;
-
 export const DEFAULT_SORT: Sort = "ratings.imdb";
-
-export interface Rating {
-  id: "imdb" | "popularity";
-  rating: number;
-}
-
-export interface Movie {
-  adult: boolean;
-  backdrop_path: string;
-  genre_ids: number[];
-  id: number;
-  original_language: string;
-  original_title: string;
-  overview: string;
-  poster_path: string;
-  title: string;
-  video: boolean;
-  ratings: Rating[];
-  release_date: string;
-  isLoading: boolean;
-  ratings$: {
-    [id: string]: number;
-  };
-}
 
 export const POSTER_BASE = `https://image.tmdb.org/t/p`;
 
 export const getPosterURL = (path: string, size: number = 500) =>
   `${POSTER_BASE}/w${size}${path}`;
 
+interface TData {
+  items: Movie[];
+  total: number;
+}
+
+const PLACEHOLDER_DATA: TData = {
+  items: [] as Movie[],
+  total: 0,
+};
+
 export const queryKey = "movies";
 
-export const useMovies = <
-  TQueryFnData extends { items: Movie[]; total: number },
-  TError extends unknown
->(
+export const useMovies = <TQueryFnData extends TData, TError extends unknown>(
   {
     limit = Infinity,
     sort = DEFAULT_SORT,
@@ -57,7 +39,7 @@ export const useMovies = <
     search?: string;
   } = {},
   options: UseQueryOptions<TQueryFnData, TError> = {}
-) => {
+): SafeUseQueryResult<TQueryFnData, TError> => {
   const select = useCallback(
     ({ items, total }: TQueryFnData) =>
       ({
@@ -116,27 +98,19 @@ export const useMovies = <
             }, [] as Movie[])
             .sort((a, b) => SORT[sort](b) - SORT[sort](a))
         )
-        .then((items) => {
-          // let items = data.slice();
-          // if (search) {
-          //   const rgx = new RegExp(`\\b${search}\\b`, "i");
-          //   items = items.filter(
-          //     ({ title, overview }) => title.match(rgx) || overview.match(rgx)
-          //   );
-          // }
-          // if (sort !== DEFAULT_SORT) {
-          //   items.sort((a, b) => SORT[sort](b) - SORT[sort](a));
-          // }
-          return {
-            items: items,
-            total: items.length,
-          };
-        }) as Promise<TQueryFnData>;
+        .then(
+          (items) =>
+            ({
+              items: items,
+              total: items.length,
+            } as TQueryFnData)
+        );
     },
     {
       ...options,
       select,
       keepPreviousData: search === searchRef.current,
+      placeholderData: PLACEHOLDER_DATA as TQueryFnData,
     }
-  );
+  ) as SafeUseQueryResult<TQueryFnData, TError>;
 };
