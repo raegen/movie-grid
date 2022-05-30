@@ -8,6 +8,7 @@ export const Item: FC<Movie & { style: CSSProperties; isLoading: boolean }> = ({
   id,
   poster_path,
   title,
+  release_date,
   isLoading,
   style,
 }) =>
@@ -35,14 +36,22 @@ export const Item: FC<Movie & { style: CSSProperties; isLoading: boolean }> = ({
             "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, " +
             "rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
         }}
-        title={title}
         position="top"
         actionIcon={
-          <IconButton sx={{ color: "white" }} aria-label={`star ${title}`}>
+          <IconButton sx={{ justifySelf: 'flex-start', color: "white" }} aria-label={`star ${title}`}>
             <StarBorderIcon />
           </IconButton>
         }
-        actionPosition="left"
+        actionPosition="right"
+      />
+      <ImageListItemBar
+        sx={{
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, " +
+            "rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
+        }}
+        title={<div style={{whiteSpace: 'normal'}}>{title} ({new Date(release_date).getFullYear()})</div>}
+        position="bottom"
       />
     </ImageListItem>
   );

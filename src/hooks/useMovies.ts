@@ -1,5 +1,4 @@
-import { title } from "process";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useQuery, UseQueryOptions } from "react-query";
 
 export const SORT = {
@@ -30,6 +29,7 @@ export interface Movie {
   title: string;
   video: boolean;
   ratings: Rating[];
+  release_date: string;
   ratings$: {
     [id: string]: number;
   };
@@ -65,52 +65,67 @@ export const useMovies = <
       } as TQueryFnData),
     [limit]
   );
+  const searchRef = useRef<string>();
   return useQuery<TQueryFnData, TError>(
     [queryKey, sort, search, limit],
     () => {
+      searchRef.current = search;
       return fetch("/movies.json")
         .then((r) => r.json() as Promise<Movie[]>)
         .then((items) =>
           Array.from(new Map(items.map((item) => [item.id, item])).values())
-            .map(
-              (item) =>
-                {
-                  const rgx = new RegExp(`\\b${search}\\b`, "i");
-                  let searchRelevance = 1;
-                  if (search) {
-                    const titleMatch = item.title.match(rgx);
-                    const overviewMatch = item.overview.match(rgx);
-                    if (titleMatch) {
-                      searchRelevance = 1 - 0.5 * ((titleMatch.index as number) / item.title.length);
-                    } else if (overviewMatch) {
-                        searchRelevance = 0.5 - 0.5 * ((overviewMatch.index as number) / item.overview.length);
-                    } else {
-                      searchRelevance = 0;
-                    }
-                  }
-                  return {
-                    ...item,
-                    searchRelevance$: searchRelevance,
-                    ratings$: item.ratings.reduce(
-                      (acc, curr) => ({ ...acc, [curr.id]: curr.rating }),
-                      {} as { [id: string]: number }
-                    ),
-                  } as Movie
+            .reduce((acc, item) => {
+              const rgx = new RegExp(`\\b${search}\\b`, "i");
+              let searchRelevance = 1;
+              if (search) {
+                const titleMatch = item.title.match(rgx);
+                const overviewMatch = item.overview.match(rgx);
+                if (titleMatch) {
+                  searchRelevance =
+                    1 -
+                    0.5 *
+                      ((titleMatch.index as number) /
+                        (item.title.length - search.length));
+                } else if (overviewMatch) {
+                  searchRelevance =
+                    0.5 -
+                    0.5 *
+                      ((overviewMatch.index as number) /
+                        (item.overview.length - search.length));
+                } else {
+                  searchRelevance = 0;
                 }
-            )
-            .sort((a, b) => SORT[DEFAULT_SORT](b) - SORT[DEFAULT_SORT](a))
+
+                if (!searchRelevance) {
+                  return acc;
+                }
+              }
+
+              return [
+                ...acc,
+                {
+                  ...item,
+                  searchRelevance$: searchRelevance,
+                  ratings$: item.ratings.reduce(
+                    (acc, curr) => ({ ...acc, [curr.id]: curr.rating }),
+                    {} as { [id: string]: number }
+                  ),
+                } as Movie,
+              ];
+            }, [] as Movie[])
+            .sort((a, b) => SORT[sort](b) - SORT[sort](a))
         )
-        .then((data) => {
-          let items = data.slice();
-          if (search) {
-            const rgx = new RegExp(`\\b${search}\\b`, "i");
-            items = items.filter(
-              ({ title, overview }) => title.match(rgx) || overview.match(rgx)
-            );
-          }
-          if (sort !== DEFAULT_SORT) {
-            items.sort((a, b) => SORT[sort](b) - SORT[sort](a));
-          }
+        .then((items) => {
+          // let items = data.slice();
+          // if (search) {
+          //   const rgx = new RegExp(`\\b${search}\\b`, "i");
+          //   items = items.filter(
+          //     ({ title, overview }) => title.match(rgx) || overview.match(rgx)
+          //   );
+          // }
+          // if (sort !== DEFAULT_SORT) {
+          //   items.sort((a, b) => SORT[sort](b) - SORT[sort](a));
+          // }
           return {
             items: items,
             total: items.length,
@@ -120,7 +135,7 @@ export const useMovies = <
     {
       ...options,
       select,
-      keepPreviousData: true,
+      keepPreviousData: search === searchRef.current,
     }
   );
 };

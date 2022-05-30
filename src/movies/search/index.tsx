@@ -2,6 +2,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import * as React from "react";
 import { FC } from "react";
+import { useDebounceCall } from "../../hooks/useDebounceCall";
 import { useMovies } from "../../hooks/useMovies";
 
 export const ComboBox: FC<{
@@ -13,6 +14,7 @@ export const ComboBox: FC<{
       Array.from(new Set((data?.items || []).map(({ title }) => title))),
     [data]
   );
+  const onChangeHandler = useDebounceCall(onChange, 2000);
   return (
     <Autocomplete
       disablePortal
@@ -23,7 +25,7 @@ export const ComboBox: FC<{
       renderInput={(params) => (
         <TextField {...params} label="Search" />
       )}
-      onChange={(_event, value) => onChange(value || '')}
+      onChange={(_event, value) => onChangeHandler(value || '')}
     />
   );
 };

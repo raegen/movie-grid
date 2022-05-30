@@ -8,11 +8,10 @@ import {
   Toolbar,
   Typography
 } from "@mui/material";
-import { FC, PropsWithChildren, useState } from "react";
+import { FC, PropsWithChildren } from "react";
 import { QueryProvider } from "./hooks";
-import { Sort } from "./hooks/useMovies";
 import { Movies } from "./movies";
-import { ComboBox } from "./movies/search";
+import { columnFill } from "./style";
 
 const Theme: FC<PropsWithChildren<{}>> = ({ children }) => {
   const theme = createTheme({
@@ -47,13 +46,11 @@ export const App = () => {
             </Typography>
           </Toolbar>
         </AppBar>
-        <main style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-          <Container
-            style={{ display: "flex", flexDirection: "column", flex: 1 }}
+        <Container
+            sx={columnFill}
           >
             <Movies />
-          </Container>
-        </main>
+        </Container>
       </QueryProvider>
     </Theme>
   );
