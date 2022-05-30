@@ -30,6 +30,7 @@ export interface Movie {
   video: boolean;
   ratings: Rating[];
   release_date: string;
+  isLoading: boolean;
   ratings$: {
     [id: string]: number;
   };
