@@ -96,7 +96,11 @@ export const useMovies = <TQueryFnData extends TData, TError extends unknown>(
                 } as Movie,
               ];
             }, [] as Movie[])
-            .sort((a, b) => SORT[sort](b) - SORT[sort](a))
+            .sort(
+              (a, b) =>
+                b.searchRelevance$ - a.searchRelevance$ ||
+                SORT[sort](b) - SORT[sort](a)
+            )
         )
         .then(
           (items) =>

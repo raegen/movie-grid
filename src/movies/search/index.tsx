@@ -14,7 +14,7 @@ export const ComboBox: FC<{
       Array.from(new Set((data?.items || []).map(({ title }) => title))),
     [data]
   );
-  const onChangeHandler = useDebounceCall(onChange, 2000);
+  const onChangeHandler = useDebounceCall(onChange, 500);
   return (
     <Autocomplete
       disablePortal

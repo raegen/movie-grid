@@ -1,16 +1,13 @@
 import {
   CSSProperties,
   FC,
-  useCallback,
-  useEffect,
-  useMemo,
   useRef,
-  useState,
 } from "react";
 import { FixedSizeGrid, GridOnItemsRenderedProps } from "react-window";
 import InfiniteLoader from "react-window-infinite-loader";
+import { Adjacent } from "../../types";
 
-export const List = <T,>({
+export const List = <T extends { id: number }>({
   items,
   count,
   children: Item,
@@ -25,75 +22,20 @@ export const List = <T,>({
   children: FC<{
     data: T;
     isLoading: boolean;
-    isFavorite: boolean;
-    isSelected: boolean;
-    onFavorite: () => void;
-    onSelect: () => void;
     style: CSSProperties;
+    adjacent: Adjacent;
   }>;
   loadMoreItems: (startIndex: number, stopIndex: number) => void;
 }) => {
-  const [selected, setSelected] = useState<number>(0);
-  const [favorites, setFavorites] = useState<Map<T, true>>(new Map());
   const gridRef = useRef<FixedSizeGrid>(null);
 
   const isItemLoaded = (index: number) => !!items[index];
   const isItemLoading = (index: number) => !items[index] && index < count;
-  const isItemFavorite = (item: T) => favorites.has(item);
 
   const cols = Math.floor(width / 200);
   const rows = Math.ceil(items.length / cols);
-  const itemWidth = (width - 30) / cols;
+  const itemWidth = width / cols;
   const itemHeight = itemWidth * 1.5;
-
-  const scrollToSelected = useCallback(
-    (index: number) => {
-      const rowIndex = Math.floor(index / cols);
-      const columnIndex = index - rowIndex * cols;
-      if (gridRef.current) {
-        gridRef.current.scrollToItem({
-          align: "auto",
-          columnIndex,
-          rowIndex,
-        });
-      }
-    },
-    [cols]
-  );
-
-  const selectIfExists = useCallback(
-    (index: number) => {
-      if (index >= 0 && index < count) {
-        setSelected(index);
-        scrollToSelected(index);
-      }
-    },
-    [count, scrollToSelected]
-  );
-
-  const toggleFavorite = useCallback(
-    (index: number) => {
-      const item = items[index];
-      if (favorites.get(item)) {
-        favorites.delete(item);
-      } else {
-        favorites.set(item, true);
-      }
-      setFavorites(new Map(favorites));
-    },
-    [favorites, items]
-  );
-
-  const KEYS = useMemo(
-    () => ({
-      ArrowUp: () => selectIfExists(selected - cols),
-      ArrowDown: () => selectIfExists(selected + cols),
-      ArrowLeft: () => selectIfExists(selected - 1),
-      ArrowRight: () => selectIfExists(selected + 1),
-      Enter: () => toggleFavorite(selected),
-    }),
-    [cols, selectIfExists, selected, toggleFavorite]
-  );
 
   const getIndex = ({
     rowIndex,
@@ -102,19 +44,6 @@ export const List = <T,>({
     rowIndex: number;
     columnIndex: number;
   }) => rowIndex * cols + columnIndex;
-
-  useEffect(() => {
-    const isKeyHandled = (key: string): key is keyof typeof KEYS => key in KEYS;
-    const handler = (e: KeyboardEvent) => {
-      if (isKeyHandled(e.key)) {
-        KEYS[e.key]();
-      }
-    };
-
-    document.addEventListener("keydown", handler);
-
-    return () => document.removeEventListener("keydown", handler);
-  }, [selected, items, KEYS, count, scrollToSelected]);
 
   return (
     <div style={{ display: "flex", width, height, justifyContent: "center" }}>
@@ -169,16 +98,24 @@ export const List = <T,>({
             }) => {
               const index = getIndex(params);
               const item = items[index];
+              const isLoading = isItemLoading(index);
+
+              // count%cols !== 0
+              if (!item && !isLoading) {
+                return null;
+              }
 
               return (
                 <Item
                   data={item}
-                  isLoading={isItemLoading(index)}
-                  isFavorite={isItemFavorite(item)}
-                  isSelected={index === selected}
-                  onFavorite={() => toggleFavorite(index)}
-                  onSelect={() => selectIfExists(index)}
+                  isLoading={isLoading}
                   style={params.style}
+                  adjacent={{
+                    up: items[index - cols]?.id,
+                    right: items[index + 1]?.id,
+                    down: items[index + cols]?.id,
+                    left: items[index - 1]?.id
+                  }}
                 />
               );
             }}

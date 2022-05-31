@@ -9,8 +9,3 @@ html, body {
   flex-direction: column;
   flex: 1 0 0;
 }
-
-.grid > div {
-  position: relative;
-  margin: 15px auto;
-}

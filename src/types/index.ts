@@ -21,6 +21,7 @@ export interface Movie {
   ratings$: {
     [id: string]: number;
   };
+  searchRelevance$: number;
 }
 
 // Since we're providing placeholder data for useMovies, data is never undefined
@@ -33,3 +34,10 @@ export type SafeUseQueryResult<
     TError
   >
 > = TQueryResult & { data: NonNullable<TQueryResult["data"]> };
+
+export interface Adjacent {
+  up?: number;
+  right?: number;
+  down?: number;
+  left?: number;
+}
