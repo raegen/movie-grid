@@ -1,4 +1,4 @@
-[Movie Grid [latest build]](https://d2acnkiego12zl.cloudfront.net)
+[Movie Grid [latest build]](https://d2acnkiego12zl.cloudfront.net) [![Production Build](https://github.com/raegen/movie-grid/actions/workflows/aws.yml/badge.svg)](https://github.com/raegen/movie-grid/actions/workflows/aws.yml)
 
 # Getting Started with Create React App
 
