@@ -1,4 +1,5 @@
 import StarBorderIcon from "@mui/icons-material/StarBorder";
+import MovieIcon from "@mui/icons-material/Movie";
 import StarIcon from "@mui/icons-material/Star";
 import { IconButton, ImageListItem, ImageListItemBar } from "@mui/material";
 import { CircularProgress } from "@mui/material";
@@ -56,30 +57,63 @@ export const Item: FC<{
     [keyHandlers]
   );
 
-  const content = isLoading ? (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <CircularProgress />
-    </div>
-  ) : (
-    [
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <CircularProgress />
+        </div>
+      );
+    }
+
+    const image = data.poster_path ? (
       <img
         src={getPosterURL(data.poster_path, 300)}
         alt={data.title}
         key="img"
         loading="lazy"
-      />,
+      />
+    ) : (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+          backgroundColor: "white",
+        }}
+      >
+        <MovieIcon
+          sx={{
+            width: "100%",
+            height: "100%",
+            padding: "24px",
+            color: "black",
+          }}
+        />
+      </div>
+    );
+
+    const release_year = data.release_date
+      ? new Date(data.release_date).getFullYear()
+      : null;
+
+    return [
+      image,
       <ImageListItemBar
         sx={{
-          background:
-            "linear-gradient(to right, rgba(0,0,0,0) 0%, " +
-            "rgba(0,0,0,0) 75%," +
-            "rgba(0,0,0,0.3) 90%, rgba(0,0,0,0.7) 100%)"
+          background: `linear-gradient(to right, 
+                  rgba(0,0,0,0) 0%, 
+                  rgba(0,0,0,0) 75%,
+                  rgba(0,0,0,0.3) 90%,
+                  rgba(0,0,0,0.7) 100%)`,
         }}
         key="barTop"
         position="bottom"
@@ -90,7 +124,7 @@ export const Item: FC<{
             onClick={toggleFavorite}
             tabIndex={-1}
           >
-            {isFavorite ? <StarIcon /> : <StarBorderIcon />}
+            {isFavorite ? <StarIcon color="warning" /> : <StarBorderIcon />}
           </IconButton>
         }
         actionPosition="right"
@@ -104,31 +138,32 @@ export const Item: FC<{
         key="barBottom"
         title={
           <div style={{ whiteSpace: "normal" }}>
-            {data.title} ({new Date(data.release_date).getFullYear()})
+            {data.title} {release_year ? `(${release_year})` : null}
           </div>
         }
         position="top"
       />,
-    ]
-  );
+    ];
+  };
 
   return (
     <ImageListItem
       tabIndex={0}
       style={{
         ...style,
-        outline: 'none',
+        outline: "none",
         padding: 1,
       }}
       sx={{
-        ':focus': {
+        ":focus": {
           borderWidth: 2,
-          borderStyle: 'solid',
-          borderRadius: '5px',
-          borderColor: 'primary',
+          borderStyle: "solid",
+          borderRadius: "5px",
+          borderColor: "primary",
           zIndex: 99,
-          boxShadow: '0px 7px 8px -4px rgb(0 0 0 / 80%), 0px 12px 17px 2px rgb(0 0 0 / 56%), 0px 5px 22px 4px rgb(0 0 0 / 48%)'
-        }
+          boxShadow:
+            "0px 7px 8px -4px rgb(0 0 0 / 80%), 0px 12px 17px 2px rgb(0 0 0 / 56%), 0px 5px 22px 4px rgb(0 0 0 / 48%)",
+        },
       }}
       cols={1}
       rows={1}
@@ -137,7 +172,7 @@ export const Item: FC<{
       component="li"
       ref={ref}
     >
-      {content}
+      {renderContent()}
     </ImageListItem>
   );
 });
