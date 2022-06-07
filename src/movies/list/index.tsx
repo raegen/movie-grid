@@ -1,7 +1,6 @@
 import {
   CSSProperties,
   FC,
-  useRef,
 } from "react";
 import { FixedSizeGrid, GridOnItemsRenderedProps } from "react-window";
 import InfiniteLoader from "react-window-infinite-loader";
@@ -27,8 +26,6 @@ export const List = <T extends { id: number }>({
   }>;
   loadMoreItems: (startIndex: number, stopIndex: number) => void;
 }) => {
-  const gridRef = useRef<FixedSizeGrid>(null);
-
   const isItemLoaded = (index: number) => !!items[index];
   const isItemLoading = (index: number) => !items[index] && index < count;
 
@@ -88,8 +85,9 @@ export const List = <T extends { id: number }>({
                 visibleStopIndex: visibleStopIndex,
               });
             }}
-            ref={gridRef}
+            ref={ref}
             className="grid"
+            style={{ width: '100vw', position: 'absolute' }}
           >
             {(params: {
               columnIndex: number;

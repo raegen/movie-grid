@@ -68,13 +68,13 @@ export const useMovies = <TQueryFnData extends TData, TError extends unknown>(
                     1 -
                     0.5 *
                       ((titleMatch.index as number) /
-                        (item.title.length - search.length));
+                        (item.title.length - search.length) || 0);
                 } else if (overviewMatch) {
                   searchRelevance =
                     0.5 -
                     0.5 *
                       ((overviewMatch.index as number) /
-                        (item.overview.length - search.length));
+                        (item.overview.length - search.length) || 0);
                 } else {
                   searchRelevance = 0;
                 }
